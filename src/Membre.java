@@ -32,4 +32,50 @@ public class Membre extends Utilisateur{
             e.printStackTrace();
         }
     }
+    public void modifierMembre(int id) {
+        Connection conn = ConnexionDB.getConnection();
+
+        String sql = "UPDATE membre SET nom = ?, prenom = ?, email = ?, motDePasse = ?, typeAbonnement = ? WHERE id = ?";
+
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, getNom());
+            ps.setString(2, getPrenom());
+            ps.setString(3, getEmail());
+            ps.setString(4, getMotDePasse());
+            ps.setString(5, getTypeAbonnement());
+            ps.setInt(6, id);
+
+            int lignesModifiees = ps.executeUpdate();
+            if (lignesModifiees > 0) {
+                System.out.println("Membre modifié : " + getNom() + " " + getPrenom());
+            } else {
+                System.out.println("️Aucun membre trouvé avec l'id " + id);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void supprimerMembre(int id) {
+        Connection conn = ConnexionDB.getConnection();
+
+        String sql = "DELETE FROM membre WHERE id = ?";
+
+        try {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setInt(1, id);
+
+            int lignesSupprimees = ps.executeUpdate();
+            if (lignesSupprimees > 0) {
+                System.out.println("Membre supprimé avec l'id " + id);
+            } else {
+                System.out.println("️Aucun membre trouvé avec l'id " + id);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

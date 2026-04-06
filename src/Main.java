@@ -2,11 +2,13 @@ public class Main {
 
     public static void main(String[] args) {
 
-        // Créer un membre
-        Membre m = new Membre("Ahmed","Mejri", "ahmed@gmail.com", "1234", "MENSUEL");
+        Membre m = new Membre("Arfaoui","Takwa", "takwa@gmail.com", "2587", "Journalier");
         m.ajouterMembre();
+        m.setNom("Aarfaoui");
+        m.modifierMembre(4);
+        m.supprimerMembre(4);
 
-        // Fermer la connexion (optionnel)
+        // Fermer la connexion
         ConnexionDB.closeConnection();
     }
 }
