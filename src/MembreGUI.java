@@ -23,7 +23,7 @@ public class MembreGUI extends JFrame {
         panelForm.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
         tfId = new JTextField();
-        tfId.setEditable(false); //
+        tfId.setEditable(false);
 
         tfNom = new JTextField();
         tfPrenom = new JTextField();
