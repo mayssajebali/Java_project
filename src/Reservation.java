@@ -1,20 +1,20 @@
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Date;
-
+import java.sql.Timestamp;
 public class Reservation {
 
     private int id;
-    private Date dateDebut;
-    private Date dateFin;
+    private Timestamp dateDebut;
+    private Timestamp dateFin;
     private String type;
 
     private int idMembre;
     private Integer idSalleReunion;
     private Integer idBureau;
 
-    public Reservation(Date dateDebut, Date dateFin, String type,
+    public Reservation(int id,Timestamp dateDebut, Timestamp dateFin, String type,
                        int idMembre, Integer idSalleReunion, Integer idBureau) {
+        this.id=id;
         this.dateDebut = dateDebut;
         this.dateFin = dateFin;
         this.type = type;
@@ -27,11 +27,11 @@ public class Reservation {
         return id;
     }
 
-    public Date getDateDebut() {
+    public Timestamp getDateDebut() {
         return dateDebut;
     }
 
-    public Date getDateFin() {
+    public Timestamp getDateFin() {
         return dateFin;
     }
 
@@ -51,11 +51,11 @@ public class Reservation {
         return idBureau;
     }
 
-    public void setDateDebut(Date dateDebut) {
+    public void setDateDebut(Timestamp dateDebut) {
         this.dateDebut = dateDebut;
     }
 
-    public void setDateFin(Date dateFin) {
+    public void setDateFin(Timestamp dateFin) {
         this.dateFin = dateFin;
     }
 
@@ -75,106 +75,4 @@ public class Reservation {
         this.idBureau = idBureau;
     }
 
-    //Ajouter une réservation
-    public void ajouterReservation() {
-
-        Connection conn = ConnexionDB.getConnection();
-
-        String sql = "INSERT INTO reservation (dateDebut, dateFin, type, idMembre, idSalleReunion, idBureau) VALUES (?, ?, ?, ?, ?, ?)";
-
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            // Vérification logique
-            if (idSalleReunion == null && idBureau == null) {
-                throw new IllegalArgumentException("Une réservation doit avoir une salle ou un bureau");
-            }
-
-            if (type.equalsIgnoreCase("Salle")) {
-                idBureau = null;
-            } else if (type.equalsIgnoreCase("Bureau")) {
-                idSalleReunion = null;
-            }
-
-            ps.setDate(1, dateDebut);
-            ps.setDate(2, dateFin);
-            ps.setString(3, type);
-            ps.setInt(4, idMembre);
-
-            // Gestion NULL
-            if (idSalleReunion != null) {
-                ps.setInt(5, idSalleReunion);
-            } else {
-                ps.setNull(5, java.sql.Types.INTEGER);
-            }
-
-            if (idBureau != null) {
-                ps.setInt(6, idBureau);
-            } else {
-                ps.setNull(6, java.sql.Types.INTEGER);
-            }
-
-            ps.executeUpdate();
-
-            System.out.println("Réservation ajoutée avec succès !");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    //Modifier une réservation
-    public void modifierReservation(int id) {
-
-        Connection conn = ConnexionDB.getConnection();
-
-        String sql = "UPDATE reservation SET dateDebut=?, dateFin=?, type=?, idMembre=?, idSalleReunion=?, idBureau=? WHERE id=?";
-
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setDate(1, dateDebut);
-            ps.setDate(2, dateFin);
-            ps.setString(3, type);
-            ps.setInt(4, idMembre);
-
-            if (idSalleReunion != null) {
-                ps.setInt(5, idSalleReunion);
-            } else {
-                ps.setNull(5, java.sql.Types.INTEGER);
-            }
-
-            if (idBureau != null) {
-                ps.setInt(6, idBureau);
-            } else {
-                ps.setNull(6, java.sql.Types.INTEGER);
-            }
-
-            ps.setInt(7, id);
-
-            ps.executeUpdate();
-
-            System.out.println("Réservation modifiée : " + id);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    // Supprimer une réservation
-    public void supprimerReservation(int id) {
-
-        Connection conn = ConnexionDB.getConnection();
-
-        String sql = "DELETE FROM reservation WHERE id = ?";
-
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, id);
-            ps.executeUpdate();
-
-            System.out.println("Réservation supprimée : " + id);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }
