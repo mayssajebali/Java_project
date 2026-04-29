@@ -186,7 +186,27 @@ public class AdminUI extends JFrame {
         btnToggle.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
         btnToggle.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
         btnToggle.addActionListener(e -> { darkMode = !darkMode; buildUI(); });
+
+
+        JButton btnLogout = new JButton("⬡  Déconnexion");
+        btnLogout.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        btnLogout.setForeground(new Color(239, 68, 68));
+        btnLogout.setBackground(new Color(45, 55, 72));
+        btnLogout.setFocusPainted(false);
+        btnLogout.setBorderPainted(false);
+        btnLogout.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnLogout.setAlignmentX(LEFT_ALIGNMENT);
+        btnLogout.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        btnLogout.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        btnLogout.addActionListener(e -> {
+            dispose();
+            new MainLoginFrame().setVisible(true);
+        });
+        p.add(btnLogout);
+        p.add(Box.createVerticalStrut(6));
+
         p.add(btnToggle);
+
 
         return p;
     }

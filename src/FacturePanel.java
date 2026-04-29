@@ -2,27 +2,32 @@ import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.util.List;
 
 public class FacturePanel extends JPanel implements AdminUI.Searchable {
 
-    private final AdminUI      ui;
-    private final FactureDAO   dao         = new FactureDAO();
+    private final AdminUI        ui;
+    private final FactureDAO     dao       = new FactureDAO();
     private final ReservationDAO resDao    = new ReservationDAO();
-    private final MembreDAO    membreDao   = new MembreDAO();
+    private final MembreDAO      membreDao = new MembreDAO();
 
     private DefaultTableModel model;
-    private JTable table;
+    private JTable            table;
 
     private JLabel lblTotal, lblPayee, lblAttente, lblRevenus;
 
     private final Color L_ROW_ALT = new Color(249, 250, 251);
     private final Color L_SEL     = new Color(219, 234, 254);
-    private final Color D_SEL     = new Color(30, 58, 100);
+    private final Color D_SEL     = new Color(30,  58, 100);
 
-    private final Color GREEN  = new Color(22, 163, 74);
-    private final Color ORANGE = new Color(234, 88, 12);
-    private final Color RED    = new Color(220, 38, 38);
+    private final Color GREEN  = new Color(22,  163, 74);
+    private final Color ORANGE = new Color(234, 88,  12);
+    private final Color RED    = new Color(220, 38,  38);
+    private final Color BLUE   = new Color(59,  130, 246);
+
+    // Nom du club affiché dans le PDF
+    private static final String space_NAME = "CoWorking Space";
 
     public FacturePanel(AdminUI ui) {
         this.ui = ui;
@@ -56,9 +61,9 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
         toolbar.setOpaque(false);
         toolbar.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
 
-        JButton btnGen    = makeBtn("⚡ Générer",       ui.getColorBlue());
-        JButton btnStatut = makeBtn("✓ Changer statut", GREEN);
-        JButton btnDel    = makeBtn("✕ Supprimer",      RED);
+        JButton btnGen    = makeBtn("⚡ Générer",        ui.getColorBlue());
+        JButton btnStatut = makeBtn("✓ Changer statut",  GREEN);
+        JButton btnDel    = makeBtn("✕ Supprimer",       RED);
 
         toolbar.add(btnGen);
         toolbar.add(btnStatut);
@@ -69,19 +74,31 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
         btnDel.addActionListener(e    -> supprimer());
 
         // --- Table ---
-        String[] cols = {"ID", "Membre", "Réservation", "Date", "Montant (DT)", "Statut"};
+        // Colonnes : ID | Membre | Réservation | Date | Montant | Statut | PDF
+        String[] cols = {"ID", "Membre", "Réservation", "Date", "Montant (DT)", "Statut", "Reçu PDF"};
         model = new DefaultTableModel(cols, 0) {
-            public boolean isCellEditable(int r, int c) { return false; }
+            @Override public boolean isCellEditable(int r, int c) { return c == 6; }
+            @Override public Class<?> getColumnClass(int c) {
+                return c == 6 ? JButton.class : Object.class;
+            }
         };
 
         table = new JTable(model);
-        table.setRowHeight(40);
+        table.setRowHeight(44);
         table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         table.setShowGrid(false);
         table.setIntercellSpacing(new Dimension(0, 0));
         table.setBackground(ui.getWhite());
         table.setSelectionBackground(ui.isDarkMode() ? D_SEL : L_SEL);
         table.setSelectionForeground(ui.getText());
+
+        // Largeur fixe de la colonne PDF
+        TableColumnModel tcm = table.getColumnModel();
+        tcm.getColumn(6).setMinWidth(110);
+        tcm.getColumn(6).setMaxWidth(130);
+        tcm.getColumn(6).setPreferredWidth(120);
+        tcm.getColumn(0).setMaxWidth(60);
+        tcm.getColumn(0).setPreferredWidth(55);
 
         JTableHeader header = table.getTableHeader();
         header.setFont(new Font("Segoe UI", Font.BOLD, 11));
@@ -92,20 +109,17 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
 
         final AdminUI uiRef = this.ui;
 
-        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+        // Renderer standard (colonnes 0-5)
+        DefaultTableCellRenderer cellRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(
                     JTable t, Object val, boolean sel, boolean foc, int row, int col) {
-
                 super.getTableCellRendererComponent(t, val, sel, foc, row, col);
-
                 setFont(new Font("Segoe UI", Font.PLAIN, 13));
                 setForeground(uiRef.getText());
                 setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
-
                 setHorizontalAlignment(col == 1 ? LEFT : CENTER);
 
-                // Colonne Statut colorée
                 if (col == 5 && val != null) {
                     switch (val.toString()) {
                         case "PAYÉE"      -> { setForeground(GREEN);  setFont(new Font("Segoe UI", Font.BOLD, 13)); }
@@ -113,19 +127,19 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
                         case "ANNULÉE"    -> { setForeground(RED);    setFont(new Font("Segoe UI", Font.BOLD, 13)); }
                     }
                 }
-
-                // Colonne Montant en gras
                 if (col == 4) setFont(new Font("Segoe UI", Font.BOLD, 13));
 
-                if (!sel) {
-                    setBackground(row % 2 == 0 ? uiRef.getWhite() : L_ROW_ALT);
-                } else {
-                    setBackground(uiRef.isDarkMode() ? D_SEL : L_SEL);
-                }
+                if (!sel) setBackground(row % 2 == 0 ? uiRef.getWhite() : L_ROW_ALT);
+                else      setBackground(uiRef.isDarkMode() ? D_SEL : L_SEL);
 
                 return this;
             }
-        });
+        };
+        for (int i = 0; i < 6; i++) tcm.getColumn(i).setCellRenderer(cellRenderer);
+
+        // Renderer + Editor pour la colonne PDF (colonne 6)
+        tcm.getColumn(6).setCellRenderer(new PdfButtonRenderer());
+        tcm.getColumn(6).setCellEditor(new PdfButtonEditor(new JCheckBox()));
 
         table.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
@@ -157,8 +171,8 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
     private void load() {
         model.setRowCount(0);
 
-        List<Facture>     factures = dao.getToutesFactures();
-        List<Membre>      membres  = membreDao.getAll();
+        List<Facture> factures = dao.getToutesFactures();
+        List<Membre>  membres  = membreDao.getAll();
 
         int total = 0, payee = 0, attente = 0;
 
@@ -174,7 +188,8 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
                     "Rés. #" + f.getIdReservation(),
                     f.getDateFacture(),
                     String.format("%.2f DT", f.getMontant()),
-                    f.getStatut()
+                    f.getStatut(),
+                    "⬇  Télécharger"          // valeur affichée dans le bouton
             });
 
             total++;
@@ -185,12 +200,10 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
         }
 
         double revenus = dao.getTotalRevenus();
-
         lblTotal.setText(String.valueOf(total));
         lblPayee.setText(String.valueOf(payee));
         lblAttente.setText(String.valueOf(attente));
         lblRevenus.setText(String.format("%.0f DT", revenus));
-
         ui.setStatus("  " + total + " factures chargées");
     }
 
@@ -203,11 +216,155 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
         sorter.setRowFilter(RowFilter.regexFilter("(?i)" + query));
     }
 
+    // ===================== PDF DOWNLOAD =====================
+    private void telechargerPdf(int modelRow) {
+        int    factureId  = Integer.parseInt(model.getValueAt(modelRow, 0).toString());
+        String membre     = model.getValueAt(modelRow, 1).toString();
+        String resLabel   = model.getValueAt(modelRow, 2).toString();          // "Rés. #5"
+        String dateF      = model.getValueAt(modelRow, 3).toString();
+        String montantStr = model.getValueAt(modelRow, 4).toString()
+                .replace(" DT", "").replace(",", ".");
+        String statut     = model.getValueAt(modelRow, 5).toString();
+
+        double montant;
+        try { montant = Double.parseDouble(montantStr); }
+        catch (NumberFormatException ex) { montant = 0; }
+
+        // Récupérer les détails de la réservation
+        int resId = 0;
+        try { resId = Integer.parseInt(resLabel.replace("Rés. #", "").trim()); }
+        catch (NumberFormatException ignored) {}
+
+        String typeRes  = "—";
+        String dateDebut = "—";
+        String dateFin   = "—";
+
+        final int finalResId = resId;
+        for (Reservation r : resDao.getToutesReservations()) {
+            if (r.getId() == finalResId) {
+                typeRes  = r.getType();
+                dateDebut = r.getDateDebut() != null ? r.getDateDebut().toString() : "—";
+                dateFin   = r.getDateFin()   != null ? r.getDateFin().toString()   : "—";
+                break;
+            }
+        }
+
+        // Choix du dossier de sauvegarde
+        JFileChooser fc = new JFileChooser();
+        fc.setDialogTitle("Enregistrer le reçu PDF");
+        fc.setSelectedFile(new File("Facture_" + String.format("%06d", factureId) + ".pdf"));
+        fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("PDF Files", "pdf"));
+
+        if (fc.showSaveDialog(ui) != JFileChooser.APPROVE_OPTION) return;
+
+        String path = fc.getSelectedFile().getAbsolutePath();
+        if (!path.toLowerCase().endsWith(".pdf")) path += ".pdf";
+
+        // Génération dans un thread séparé pour ne pas bloquer l'UI
+        final String finalPath  = path;
+        final String finalType  = typeRes;
+        final String finalDebut = dateDebut;
+        final String finalFin   = dateFin;
+        final double finalMt    = montant;
+        final int    fId        = factureId;
+        final int    frId       = resId;
+
+        ui.setStatus("  Génération du PDF en cours…");
+
+        new Thread(() -> {
+            try {
+                FacturePdfExporter.generate(
+                        finalPath, fId, membre, frId,
+                        finalType, finalDebut, finalFin,
+                        dateF, finalMt, statut, space_NAME);
+
+                SwingUtilities.invokeLater(() -> {
+                    ui.setStatus("  PDF enregistré : " + finalPath);
+                    int choice = JOptionPane.showConfirmDialog(ui,
+                            "✅ Reçu PDF généré avec succès !\n\n"
+                                    + "Emplacement : " + finalPath + "\n\n"
+                                    + "Voulez-vous ouvrir le fichier maintenant ?",
+                            "PDF généré", JOptionPane.YES_NO_OPTION,
+                            JOptionPane.INFORMATION_MESSAGE);
+                    if (choice == JOptionPane.YES_OPTION) {
+                        try { Desktop.getDesktop().open(new File(finalPath)); }
+                        catch (Exception ex) {
+                            alert(null, "Impossible d'ouvrir le PDF : " + ex.getMessage());
+                        }
+                    }
+                });
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() ->
+                        alert(null, "Erreur lors de la génération du PDF :\n" + ex.getMessage()));
+            }
+        }).start();
+    }
+
+    // ===================== PDF BUTTON RENDERER =====================
+    /** Affiche un bouton stylé dans la cellule. */
+    private class PdfButtonRenderer extends JButton implements TableCellRenderer {
+        PdfButtonRenderer() {
+            setOpaque(true);
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setFont(new Font("Segoe UI", Font.BOLD, 12));
+            setForeground(Color.WHITE);
+            setCursor(new Cursor(Cursor.HAND_CURSOR));
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable t, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
+            setText(value != null ? value.toString() : "⬇  Télécharger");
+            setBackground(BLUE);
+            setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
+            return this;
+        }
+    }
+
+    // ===================== PDF BUTTON EDITOR =====================
+    /** Gère le clic sur le bouton PDF. */
+    private class PdfButtonEditor extends DefaultCellEditor {
+        private JButton btn;
+        private int     clickedRow = -1;
+
+        PdfButtonEditor(JCheckBox checkBox) {
+            super(checkBox);
+            btn = new JButton();
+            btn.setOpaque(true);
+            btn.setFocusPainted(false);
+            btn.setBorderPainted(false);
+            btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            btn.setForeground(Color.WHITE);
+            btn.setBackground(new Color(37, 99, 235));  // hover plus foncé
+            btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btn.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
+
+            btn.addActionListener(e -> {
+                fireEditingStopped();
+                if (clickedRow >= 0) {
+                    int modelRow = table.convertRowIndexToModel(clickedRow);
+                    telechargerPdf(modelRow);
+                }
+            });
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(
+                JTable t, Object value, boolean isSelected, int row, int col) {
+            clickedRow = row;
+            btn.setText(value != null ? value.toString() : "⬇  Télécharger");
+            return btn;
+        }
+
+        @Override public Object getCellEditorValue() { return btn.getText(); }
+        @Override public boolean isCellEditable(java.util.EventObject e) { return true; }
+    }
+
     // ===================== GÉNÉRER =====================
     private void dialogGenerer() {
         JDialog d = makeDialog("Générer une facture", 420, 220);
 
-        // Combo membres
         JComboBox<ComboItem> fMembre = new JComboBox<>();
         fMembre.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         fMembre.setBackground(ui.getBg());
@@ -215,17 +372,14 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
         for (Membre m : membreDao.getAll())
             fMembre.addItem(new ComboItem(m.getId(), m.getNom() + " " + m.getPrenom()));
 
-        // Combo réservations (filtrées par membre sélectionné)
         JComboBox<ComboItem> fRes = new JComboBox<>();
         fRes.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         fRes.setBackground(ui.getBg());
         fRes.setForeground(ui.getText());
 
-        // Chargement initial
         chargerReservationsDuMembre(fRes,
                 fMembre.getItemCount() > 0 ? ((ComboItem) fMembre.getItemAt(0)).id : -1);
 
-        // Mise à jour dynamique
         fMembre.addActionListener(e -> {
             ComboItem sel = (ComboItem) fMembre.getSelectedItem();
             if (sel != null) chargerReservationsDuMembre(fRes, sel.id);
@@ -246,25 +400,19 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
             }
 
             Facture f = dao.genererFacture(res.id);
-
-            if (f == null) {
-                alert(d, "Erreur lors de la génération de la facture.");
-                return;
-            }
+            if (f == null) { alert(d, "Erreur lors de la génération de la facture."); return; }
 
             load();
             ui.setStatus(String.format("  Facture générée : %.2f DT", f.getMontant()));
             d.dispose();
 
-            // Aperçu récapitulatif
             JOptionPane.showMessageDialog(ui,
                     "✅ Facture générée avec succès !\n\n"
-                    + "Membre      : " + membre.label + "\n"
-                    + "Réservation : #" + res.id + "\n"
-                    + "Montant     : " + String.format("%.2f DT", f.getMontant()) + "\n"
-                    + "Statut      : EN_ATTENTE",
-                    "Facture créée",
-                    JOptionPane.INFORMATION_MESSAGE);
+                            + "Membre      : " + membre.label + "\n"
+                            + "Réservation : #" + res.id + "\n"
+                            + "Montant     : " + String.format("%.2f DT", f.getMontant()) + "\n"
+                            + "Statut      : EN_ATTENTE",
+                    "Facture créée", JOptionPane.INFORMATION_MESSAGE);
         }), BorderLayout.SOUTH);
 
         d.setVisible(true);
@@ -285,9 +433,7 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
         fStatut.setForeground(ui.getText());
         fStatut.setSelectedItem(model.getValueAt(row, 5).toString());
 
-        d.add(makeForm(new String[]{"Nouveau statut"},
-                new JComponent[]{fStatut}), BorderLayout.CENTER);
-
+        d.add(makeForm(new String[]{"Nouveau statut"}, new JComponent[]{fStatut}), BorderLayout.CENTER);
         d.add(makeDialogActions(d, () -> {
             dao.modifierStatut(id, fStatut.getSelectedItem().toString());
             load();
@@ -315,15 +461,12 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
     }
 
     // ===================== COMBO HELPERS =====================
-
     private static class ComboItem {
-        final int    id;
-        final String label;
+        final int id; final String label;
         ComboItem(int id, String label) { this.id = id; this.label = label; }
         @Override public String toString() { return label; }
     }
 
-    /** Charge les réservations d'un membre dans le combo */
     private void chargerReservationsDuMembre(JComboBox<ComboItem> combo, int idMembre) {
         combo.removeAllItems();
         for (Reservation r : resDao.getToutesReservations()) {

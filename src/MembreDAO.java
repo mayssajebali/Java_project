@@ -121,4 +121,27 @@ public class MembreDAO {
 
         return null;
     }
+
+
+
+    public Membre authentifier(String email, String motDePasse) {
+        String sql = "SELECT * FROM membre WHERE email = ? AND motDePasse = ?";
+        try (Connection conn = ConnexionDB.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            ps.setString(2, motDePasse);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return new Membre(
+                        rs.getInt("id"),
+                        rs.getString("nom"),
+                        rs.getString("prenom"),
+                        rs.getString("email"),
+                        rs.getString("motDePasse"),
+                        rs.getString("typeAbonnement")
+                );
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return null;
+    }
 }

@@ -44,7 +44,8 @@ public class LoginAdminFrame extends JFrame {
         setSize(900, 580);
         setMinimumSize(new Dimension(860, 540));
         setLocationRelativeTo(null);
-        setResizable(false);
+        setResizable(true);
+        setMinimumSize(new Dimension(860, 540));
 
         JPanel root = new JPanel(new GridLayout(1, 2));
         root.setBackground(WHITE);
@@ -314,11 +315,26 @@ public class LoginAdminFrame extends JFrame {
         form.add(errorLabel);
         form.add(Box.createVerticalStrut(14));
 
+        // Bouton connexion
         loginBtn = buildLoginButton();
         form.add(loginBtn);
-        form.add(Box.createVerticalStrut(20));
-        form.add(buildDivider());
         form.add(Box.createVerticalStrut(14));
+
+        // Bouton retour
+        JButton retourBtn = new JButton("← Retour à l'accueil");
+        retourBtn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        retourBtn.setForeground(TEXT_MUTED);
+        retourBtn.setBorderPainted(false);
+        retourBtn.setContentAreaFilled(false);
+        retourBtn.setFocusPainted(false);
+        retourBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        retourBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        retourBtn.addActionListener(e -> {
+            dispose();
+            new MainLoginFrame().setVisible(true);
+        });
+        form.add(retourBtn);
+
         outer.add(form);
         return outer;
     }
