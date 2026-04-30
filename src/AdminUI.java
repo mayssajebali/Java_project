@@ -16,6 +16,7 @@ import java.util.Map;
 public class AdminUI extends JFrame {
 
     // ===== SECTION KEYS =====
+    public static final String SEC_DASHBOARD    = "Dashboard";
     public static final String SEC_SALLES       = "Salles de réunion";
     public static final String SEC_BUREAUX      = "Bureaux";
     public static final String SEC_MEMBRES      = "Membres";
@@ -24,7 +25,7 @@ public class AdminUI extends JFrame {
 
     // ===== STATE =====
     private boolean darkMode      = false;
-    private String  activeSection = SEC_SALLES;
+    private String  activeSection = SEC_DASHBOARD;   // ← démarre sur le dashboard
 
     // ===== LAYOUT =====
     private JPanel     sidebar, mainPanel, topBar, statusBar, cardContainer;
@@ -38,10 +39,11 @@ public class AdminUI extends JFrame {
 
     // Content panels : sectionKey → panel  (enregistrés via registerPanel)
     private final Map<String, JPanel>  contentPanels = new LinkedHashMap<>();
+    private DashboardPanel dashboardPanel;
 
     // ===== COULEURS LIGHT =====
     private final Color L_SIDEBAR  = new Color(30, 36, 51);
-    private final Color L_ACT      = new Color(37, 99, 235);
+    private final Color L_ACT      = new Color(37, 123, 235);
     private final Color L_NAV_TEXT = new Color(156, 163, 175);
     private final Color L_BG       = new Color(249, 250, 251);
     private final Color L_WHITE    = Color.WHITE;
@@ -92,11 +94,18 @@ public class AdminUI extends JFrame {
      * Remplacez les PlaceholderPanel par vos vraies classes au fur et à mesure.
      */
     private void registerPanels() {
+        // ── Dashboard en premier ──────────────────────────────────────────────
+        dashboardPanel = new DashboardPanel(this);
+        registerPanel(SEC_DASHBOARD,    dashboardPanel);
+        // ── Panels métier ─────────────────────────────────────────────────────
         registerPanel(SEC_SALLES, new SallesPanel(this));
         registerPanel(SEC_BUREAUX, new BureauPannel(this));
         registerPanel(SEC_MEMBRES, new MembrePanel(this));
         registerPanel(SEC_RESERVATIONS, new ReservationPanel(this));
         registerPanel(SEC_FACTURES, new FacturePanel(this));
+
+        // Afficher le dashboard au démarrage
+        navigateTo(SEC_DASHBOARD);
     }
 
     /**
@@ -159,36 +168,25 @@ public class AdminUI extends JFrame {
         p.add(sidebarSectionLabel("MENU"));
 
         String[][] menuItems = {
-                {SEC_SALLES,       "🏢"},
-                {SEC_BUREAUX,      "🪑"},
-                {SEC_MEMBRES,      "👥"},
-                {SEC_RESERVATIONS, "📅"},
-                {SEC_FACTURES,     "🧾"},
+                {SEC_DASHBOARD,    "dashboard"},   // ← Dashboard en tête
+                {SEC_SALLES,       "building"},
+                {SEC_BUREAUX,      "chair"},
+                {SEC_MEMBRES,      "people"},
+                {SEC_RESERVATIONS, "calendar"},
+                {SEC_FACTURES,     "invoice"},
         };
         for (String[] item : menuItems) {
-            p.add(buildNavItem(item[1] + "  " + item[0], item[0]));
+            p.add(buildNavItem(item[0], item[1], item[0]));
             p.add(Box.createVerticalStrut(4));
         }
 
         p.add(Box.createVerticalGlue());
         p.add(sidebarSectionLabel("COMPTE"));
-        p.add(buildNavItem("👤  Administrateur", null));
+        p.add(buildNavItem("Administrateur", "person", null));
         p.add(Box.createVerticalStrut(10));
 
-        btnToggle = new JButton(darkMode ? "☀  Mode clair" : "☾  Mode sombre");
-        btnToggle.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        btnToggle.setForeground(L_NAV_TEXT);
-        btnToggle.setBackground(new Color(45, 55, 72));
-        btnToggle.setFocusPainted(false);
-        btnToggle.setBorderPainted(false);
-        btnToggle.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnToggle.setAlignmentX(LEFT_ALIGNMENT);
-        btnToggle.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
-        btnToggle.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        btnToggle.addActionListener(e -> { darkMode = !darkMode; buildUI(); });
 
-
-        JButton btnLogout = new JButton("⬡  Déconnexion");
+        JButton btnLogout = new JButton("  Déconnexion");
         btnLogout.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         btnLogout.setForeground(new Color(239, 68, 68));
         btnLogout.setBackground(new Color(45, 55, 72));
@@ -205,7 +203,6 @@ public class AdminUI extends JFrame {
         p.add(btnLogout);
         p.add(Box.createVerticalStrut(6));
 
-        p.add(btnToggle);
 
 
         return p;
@@ -221,28 +218,58 @@ public class AdminUI extends JFrame {
         return l;
     }
 
-    private JButton buildNavItem(String label, String sectionKey) {
-        boolean active = sectionKey != null && sectionKey.equals(activeSection);
-        JButton btn = new JButton(label);
-        btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        btn.setForeground(active ? WHITE : bg(L_NAV_TEXT, new Color(107, 114, 128)));
-        btn.setBackground(active ? L_ACT : bg(L_SIDEBAR, D_SIDEBAR));
+    private JButton buildNavItem(String label, String iconType, String sectionKey) {
+        boolean isActive = sectionKey != null && sectionKey.equals(activeSection);
+        boolean[] activeFlag = { isActive }; // flag mutable capturé par les lambdas
+
+        Color iconBg = isActive ? L_ACT : bg(L_SIDEBAR, D_SIDEBAR);
+        Color iconFg = isActive ? WHITE : L_NAV_TEXT;
+
+        IconLabel ic = new IconLabel(iconType, iconBg, iconFg) {
+            { setPreferredSize(new Dimension(20, 20)); }
+        };
+
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lbl.setForeground(isActive ? WHITE : bg(L_NAV_TEXT, new Color(107, 114, 128)));
+
+        JButton btn = new JButton() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (activeFlag[0] || getModel().isRollover()) {
+                    g2.setColor(activeFlag[0] ? L_ACT : new Color(45, 55, 72));
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                }
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+
+        btn.setLayout(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        btn.add(ic);
+        btn.add(lbl);
+
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
         btn.setHorizontalAlignment(SwingConstants.LEFT);
         btn.setAlignmentX(LEFT_ALIGNMENT);
         btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        btn.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         if (sectionKey != null) {
+            // On stocke aussi ic et lbl dans navMap pour pouvoir les mettre à jour
             navMap.put(sectionKey, btn);
+            btn.putClientProperty("activeFlag", activeFlag);
+            btn.putClientProperty("iconLabel",  ic);
+            btn.putClientProperty("textLabel",  lbl);
             btn.addActionListener(e -> navigateTo(sectionKey));
         }
         return btn;
-    }
-
-    // ===================== MAIN =====================
+    }    // ===================== MAIN =====================
     private JPanel buildMain() {
         JPanel p = new JPanel(new BorderLayout());
         p.setBackground(bg(L_BG, D_BG));
@@ -351,14 +378,37 @@ public class AdminUI extends JFrame {
 
         for (Map.Entry<String, JButton> e : navMap.entrySet()) {
             boolean active = e.getKey().equals(section);
-            e.getValue().setForeground(active ? WHITE : bg(L_NAV_TEXT, new Color(107, 114, 128)));
-            e.getValue().setBackground(active ? L_ACT : bg(L_SIDEBAR, D_SIDEBAR));
+            JButton btn = e.getValue();
+
+            // Met à jour le flag utilisé par paintComponent
+            boolean[] flag = (boolean[]) btn.getClientProperty("activeFlag");
+            if (flag != null) flag[0] = active;
+
+            // Met à jour la couleur du texte
+            JLabel lbl = (JLabel) btn.getClientProperty("textLabel");
+            if (lbl != null)
+                lbl.setForeground(active ? WHITE : bg(L_NAV_TEXT, new Color(107, 114, 128)));
+
+            // Met à jour la couleur de l'icône
+            IconLabel ic = (IconLabel) btn.getClientProperty("iconLabel");
+            if (ic != null) {
+                ic.setColors(active ? L_ACT : bg(L_SIDEBAR, D_SIDEBAR),
+                        active ? WHITE : L_NAV_TEXT);
+            }
+
+            btn.repaint();
         }
 
+
+
         if (cardLayout != null) cardLayout.show(cardContainer, section);
+
+        // Rafraîchir le dashboard à chaque fois qu'on y revient
+        if (SEC_DASHBOARD.equals(section) && dashboardPanel != null) {
+            dashboardPanel.refresh();
+        }
         setStatus("  Section : " + section);
     }
-
     // ===================== SEARCH FORWARD =====================
     private void forwardSearch() {
         String txt = txtSearch.getText();
@@ -371,6 +421,8 @@ public class AdminUI extends JFrame {
     /** Met à jour le message de la status bar. */
     public void    setStatus(String msg)           { if (lblStatus != null) lblStatus.setText(msg); }
     public boolean isDarkMode()                    { return darkMode; }
+    public void    refreshDashboard()              { if (dashboardPanel != null) dashboardPanel.refresh(); }
+
 
     // Résolution couleur light/dark — utilisable depuis les panels enfants
     public Color   bg(Color light, Color dark)     { return darkMode ? dark : light; }
@@ -390,6 +442,7 @@ public class AdminUI extends JFrame {
     // ===================== SUBTITLE =====================
     private String sectionSubtitle(String section) {
         return switch (section) {
+            case SEC_DASHBOARD    -> "Vue d'ensemble — statistiques et indicateurs";
             case SEC_SALLES       -> "Gérez vos salles de réunion";
             case SEC_BUREAUX      -> "Gérez vos espaces de bureaux";
             case SEC_MEMBRES      -> "Gérez les membres et abonnements";

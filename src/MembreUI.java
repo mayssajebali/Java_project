@@ -3,6 +3,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.*;
 import java.awt.*;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class MembreUI extends JFrame {
 
@@ -81,7 +83,7 @@ public class MembreUI extends JFrame {
         avatar.setAlignmentX(LEFT_ALIGNMENT);
         avatar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
 
-        JLabel av = new JLabel(membre.getNom().substring(0,1).toUpperCase(), SwingConstants.CENTER) {
+        JLabel av = new JLabel(membre.getNom().substring(0, 1).toUpperCase(), SwingConstants.CENTER) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -109,32 +111,89 @@ public class MembreUI extends JFrame {
         p.add(avatar);
         p.add(Box.createVerticalStrut(8));
 
-        // Nav items
-        p.add(navBtn("🪑  Bureaux",         "bureaux"));
+        // Nav items avec IconLabel
+        p.add(navBtn("chair",   "Bureaux",          "bureaux"));
         p.add(Box.createVerticalStrut(4));
-        p.add(navBtn("🏢  Salles de réunion", "salles"));
+        p.add(navBtn("building","Salles de réunion", "salles"));
+        p.add(Box.createVerticalStrut(4));
+        p.add(navBtn("invoice", "Factures",          "factures"));
         p.add(Box.createVerticalStrut(4));
 
         p.add(Box.createVerticalGlue());
         p.add(sectionLabel("COMPTE"));
 
         // Déconnexion
-        JButton btnLogout = new JButton("⬡  Déconnexion");
-        btnLogout.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        btnLogout.setForeground(new Color(239, 68, 68));
-        btnLogout.setBackground(new Color(45, 55, 72));
-        btnLogout.setFocusPainted(false);
-        btnLogout.setBorderPainted(false);
-        btnLogout.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnLogout.setAlignmentX(LEFT_ALIGNMENT);
-        btnLogout.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
-        btnLogout.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        btnLogout.addActionListener(e -> { dispose(); new MainLoginFrame().setVisible(true); });
-        p.add(btnLogout);
+        JPanel logoutRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        logoutRow.setOpaque(false);
+        logoutRow.setAlignmentX(LEFT_ALIGNMENT);
+        logoutRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        logoutRow.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        IconLabel logoutIcon = new IconLabel("circle", new Color(60, 30, 30), new Color(239, 68, 68));
+        logoutIcon.setPreferredSize(new Dimension(28, 28));
+
+        JLabel logoutLbl = new JLabel("Déconnexion");
+        logoutLbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        logoutLbl.setForeground(new Color(239, 68, 68));
+
+        logoutRow.add(logoutIcon);
+        logoutRow.add(logoutLbl);
+        logoutRow.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                dispose(); new MainLoginFrame().setVisible(true);
+            }
+        });
+        p.add(logoutRow);
 
         return p;
     }
 
+    private JButton navBtn(String iconType, String label, String section) {
+        boolean active = section.equals(activeSection);
+
+        Color iconBg = active ? new Color(59, 119, 255) : new Color(45, 55, 72);
+        Color iconFg = WHITE;
+
+        IconLabel icon = new IconLabel(iconType, iconBg, iconFg);
+        icon.setPreferredSize(new Dimension(28, 28));
+
+        JButton btn = new JButton(label) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (active) {
+                    g2.setColor(L_ACT);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                }
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+
+        btn.setLayout(new FlowLayout(FlowLayout.LEFT, 8, 5));
+        btn.add(icon);
+
+        JLabel text = new JLabel(label);
+        text.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        text.setForeground(active ? WHITE : L_NAV_TEXT);
+        btn.add(text);
+
+        btn.setText("");  // retire le texte natif du JButton
+        btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        btn.setForeground(active ? WHITE : L_NAV_TEXT);
+        btn.setBackground(L_SIDEBAR);
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setAlignmentX(LEFT_ALIGNMENT);
+        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        btn.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.addActionListener(e -> { activeSection = section; buildUI(); });
+
+        return btn;
+    }
     private JLabel sectionLabel(String text) {
         JLabel l = new JLabel(text);
         l.setFont(new Font("Segoe UI", Font.BOLD, 10));
@@ -143,23 +202,6 @@ public class MembreUI extends JFrame {
         l.setBorder(BorderFactory.createEmptyBorder(8, 4, 4, 0));
         l.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
         return l;
-    }
-
-    private JButton navBtn(String label, String section) {
-        boolean active = section.equals(activeSection);
-        JButton btn = new JButton(label);
-        btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        btn.setForeground(active ? WHITE : L_NAV_TEXT);
-        btn.setBackground(active ? L_ACT : L_SIDEBAR);
-        btn.setFocusPainted(false);
-        btn.setBorderPainted(false);
-        btn.setHorizontalAlignment(SwingConstants.LEFT);
-        btn.setAlignmentX(LEFT_ALIGNMENT);
-        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.addActionListener(e -> { activeSection = section; buildUI(); });
-        return btn;
     }
 
     // ── MAIN ─────────────────────────────────────────────────
@@ -179,10 +221,27 @@ public class MembreUI extends JFrame {
                 BorderFactory.createMatteBorder(0, 0, 1, 0, L_BORDER),
                 BorderFactory.createEmptyBorder(14, 20, 14, 20)));
 
-        String sectionTitle = activeSection.equals("bureaux") ? "Bureaux" : "Salles de réunion";
-        String sectionSub   = activeSection.equals("bureaux")
-                ? "Historique de vos réservations de bureaux"
-                : "Historique de vos réservations de salles";
+        String sectionTitle;
+        String sectionSub;
+
+        switch (activeSection) {
+            case "bureaux" -> {
+                sectionTitle = "Bureaux";
+                sectionSub = "Historique de vos réservations de bureaux";
+            }
+            case "salles" -> {
+                sectionTitle = "Salles de réunion";
+                sectionSub = "Historique de vos réservations de salles";
+            }
+            case "factures" -> {
+                sectionTitle = "Factures";
+                sectionSub = "Consultez vos factures";
+            }
+            default -> {
+                sectionTitle = "";
+                sectionSub = "";
+            }
+        }
 
         JLabel title = new JLabel(sectionTitle);
         title.setFont(new Font("Segoe UI", Font.BOLD, 18));
@@ -221,9 +280,15 @@ public class MembreUI extends JFrame {
         stats.add(statCard("Bureaux réservés",   lblBureau, ORANGE));
         stats.add(statCard("Salles réservées",   lblSalle,  GREEN));
 
-        // Table
-        JScrollPane table = activeSection.equals("bureaux")
-                ? buildTable("Bureau") : buildTable("Salle");
+        JScrollPane table;
+
+        if (activeSection.equals("bureaux")) {
+            table = buildTable("Bureau");
+        } else if (activeSection.equals("salles")) {
+            table = buildTable("Salle");
+        } else {
+            table = buildFacturesTable();
+        }
 
         p.add(stats, BorderLayout.NORTH);
         p.add(table, BorderLayout.CENTER);
@@ -295,6 +360,72 @@ public class MembreUI extends JFrame {
                     r.getDateFin().toString().substring(0, 16),
                     duree
             });
+        }
+
+        JTable table = new JTable(model);
+        table.setRowHeight(40);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        table.setShowGrid(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
+        table.setBackground(L_WHITE);
+        table.setSelectionBackground(L_SEL);
+        table.setSelectionForeground(L_TEXT);
+
+        JTableHeader th = table.getTableHeader();
+        th.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        th.setBackground(L_BG);
+        th.setForeground(L_SUBTEXT);
+        th.setPreferredSize(new Dimension(0, 38));
+        th.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, L_BORDER));
+
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(
+                    JTable t, Object val, boolean sel, boolean foc, int row, int col) {
+                super.getTableCellRendererComponent(t, val, sel, foc, row, col);
+                setFont(new Font("Segoe UI", Font.PLAIN, 13));
+                setForeground(L_TEXT);
+                setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
+                setHorizontalAlignment(col == 1 ? LEFT : CENTER);
+                setBackground(sel ? L_SEL : (row % 2 == 0 ? L_WHITE : L_ROW_ALT));
+                return this;
+            }
+        });
+
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setBorder(BorderFactory.createLineBorder(L_BORDER));
+        scroll.getViewport().setBackground(L_WHITE);
+        return scroll;
+    }
+    private JScrollPane buildFacturesTable() {
+
+        String[] cols = {"ID", "Réservation", "Date", "Montant", "Statut"};
+
+        DefaultTableModel model = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+
+        FactureDAO facDAO = new FactureDAO();
+
+        List<Reservation> reservations = resDAO.getReservationsParMembre(membre.getId());
+        List<Facture> factures = facDAO.getToutesFactures();
+
+        // récupérer les IDs des réservations du membre
+        Set<Integer> resIds = reservations.stream()
+                .map(Reservation::getId)
+                .collect(Collectors.toSet());
+
+        for (Facture f : factures) {
+            if (resIds.contains(f.getIdReservation())) {
+
+                model.addRow(new Object[]{
+                        f.getId(),
+                        "Rés. #" + f.getIdReservation(),
+                        f.getDateFacture(),
+                        f.getMontant() + " DT",
+                        f.getStatut()
+                });
+            }
         }
 
         JTable table = new JTable(model);

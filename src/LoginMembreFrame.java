@@ -14,6 +14,7 @@ public class LoginMembreFrame extends JFrame {
     private static final Color BORDER_CLR  = new Color(232, 230, 224);
     private static final Color GREEN       = new Color(29,  158, 117);
     private static final Color GREEN_LIGHT = new Color(225, 245, 238);
+    private static final Color GREEN_DARK  = new Color(15,  110, 86);
     private static final Color AMBER_LIGHT = new Color(250, 238, 218);
     private static final Color BLUE        = new Color(37,  99,  235);
     private static final Color BLUE_LIGHT  = new Color(219, 234, 254);
@@ -80,11 +81,11 @@ public class LoginMembreFrame extends JFrame {
         top.add(Box.createVerticalStrut(10));
         top.add(sub);
         top.add(Box.createVerticalStrut(22));
-        top.add(makeInfoCard(BLUE_LIGHT,   "🏢", "Mes bureaux réservés",     "Historique complet"));
+        top.add(makeInfoCard(BLUE_LIGHT,   "building", "Mes bureaux réservés",     "Historique complet"));
         top.add(Box.createVerticalStrut(8));
-        top.add(makeInfoCard(GREEN_LIGHT,  "📅", "Mes salles de réunion",    "Toutes vos réservations"));
+        top.add(makeInfoCard(GREEN_LIGHT,  "calendar", "Mes salles de réunion",    "Toutes vos réservations"));
         top.add(Box.createVerticalStrut(8));
-        top.add(makeInfoCard(AMBER_LIGHT,  "🧾", "Mes factures",             "Suivi de vos paiements"));
+        top.add(makeInfoCard(AMBER_LIGHT,  "invoice", "Mes factures",             "Suivi de vos paiements"));
 
         JPanel bottom = new JPanel();
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.Y_AXIS));
@@ -116,18 +117,12 @@ public class LoginMembreFrame extends JFrame {
         card.setBorder(new EmptyBorder(10, 12, 10, 12));
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58));
         card.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel ic = new JLabel(icon, SwingConstants.CENTER) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(bg); g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                g2.dispose(); super.paintComponent(g);
-            }
-        };
-        ic.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
-        ic.setPreferredSize(new Dimension(36, 36));
-        ic.setOpaque(false);
+        Color iconFg;
+        if (bg == GREEN_LIGHT)       iconFg = GREEN_DARK;
+        else if (bg == AMBER_LIGHT)  iconFg = new Color(180, 110, 20);
+        else if (bg == BLUE_LIGHT)   iconFg = BLUE_DARK;
+        else                         iconFg = TEXT_MED;
+        IconLabel ic = new IconLabel(icon, bg, iconFg);
 
         JPanel info = new JPanel();
         info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
@@ -313,12 +308,12 @@ public class LoginMembreFrame extends JFrame {
     private void paintBg(Graphics g, JComponent c) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setColor(WHITE); g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), 8, 8);
+        g2.setColor(WHITE);
+        g2.fillRoundRect(1, 1, c.getWidth() - 2, c.getHeight() - 2, 8, 8);
         g2.setColor(c.hasFocus() ? BLUE : BORDER_CLR);
-        g2.drawRoundRect(0, 0, c.getWidth()-1, c.getHeight()-1, 8, 8);
+        g2.drawRoundRect(1, 1, c.getWidth() - 3, c.getHeight() - 3, 8, 8);
         g2.dispose();
     }
-
     private void styleInput(JTextField f) {
         f.setOpaque(false);
         f.setForeground(TEXT_DARK);
@@ -397,5 +392,111 @@ public class LoginMembreFrame extends JFrame {
             }
         };
         worker.execute();
+    }
+
+    // ── Classe utilitaire : icône dessinée en Java 2D ──────────
+    static class IconLabel extends JLabel {
+        private final String type;  // "gear", "circle", "square", "calendar", "people", "building"
+        private final Color bg, fg;
+
+        IconLabel(String type, Color bg, Color fg) {
+            super();
+            this.type = type; this.bg = bg; this.fg = fg;
+            setPreferredSize(new Dimension(36, 36));
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth(), h = getHeight();
+
+            // Fond arrondi
+            g2.setColor(bg);
+            g2.fillRoundRect(0, 0, w, h, 10, 10);
+
+            g2.setColor(fg);
+            g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+            int cx = w / 2, cy = h / 2;
+
+            switch (type) {
+                case "gear" -> drawGear(g2, cx, cy);
+                case "circle" -> {
+                    g2.drawOval(cx - 9, cy - 9, 18, 18);
+                    g2.fillOval(cx - 4, cy - 4, 8, 8);
+                }
+                case "square" -> {
+                    g2.setStroke(new BasicStroke(2.5f));
+                    g2.fillRect(cx - 6, cy - 6, 12, 12);
+                }
+                case "building" -> {
+                    g2.fillRect(cx - 8, cy - 9, 16, 14);
+                    g2.fillRect(cx - 3, cy + 5, 6, 4);
+                    g2.setColor(bg);
+                    g2.fillRect(cx - 5, cy - 6, 3, 3);
+                    g2.fillRect(cx + 2, cy - 6, 3, 3);
+                    g2.fillRect(cx - 5, cy - 1, 3, 3);
+                    g2.fillRect(cx + 2, cy - 1, 3, 3);
+                }
+                case "people" -> {
+                    g2.fillOval(cx - 8, cy - 9, 7, 7);
+                    g2.fillOval(cx + 1, cy - 9, 7, 7);
+                    g2.fillArc(cx - 11, cy - 2, 10, 8, 180, 180);
+                    g2.fillArc(cx + 1,  cy - 2, 10, 8, 180, 180);
+                }
+                case "calendar" -> {
+                    g2.drawRoundRect(cx - 9, cy - 8, 18, 16, 3, 3);
+                    g2.fillRect(cx - 5, cy - 10, 2, 5);
+                    g2.fillRect(cx + 3, cy - 10, 2, 5);
+                    g2.fillRect(cx - 7, cy - 2, 14, 1);
+                    // Petite croix = date
+                    g2.fillRect(cx - 2, cy + 2, 4, 1);
+                    g2.fillRect(cx, cy,   1, 4);
+                }
+                case "person" -> {
+                    // Tête
+                    g2.fillOval(cx - 5, cy - 10, 10, 10);
+                    // Corps
+                    g2.fillArc(cx - 8, cy + 1, 16, 10, 180, 180);
+                }
+                case "invoice" -> {
+                    // Feuille de papier
+                    g2.setColor(fg);
+                    g2.fillRoundRect(cx - 8, cy - 10, 14, 18, 2, 2);
+                    // Coin plié (oreille)
+                    g2.setColor(bg);
+                    g2.fillRect(cx + 2, cy - 10, 4, 4);
+                    g2.setColor(fg);
+                    g2.drawLine(cx + 2, cy - 10, cx + 6, cy - 6);
+                    // Lignes de texte simulées
+                    g2.setColor(bg);
+                    g2.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                    g2.drawLine(cx - 6, cy - 4, cx + 3, cy - 4);
+                    g2.drawLine(cx - 6, cy,     cx + 3, cy    );
+                    g2.drawLine(cx - 6, cy + 4, cx + 1, cy + 4);
+                }
+            }
+            g2.dispose();
+        }
+
+        private void drawGear(Graphics2D g2, int cx, int cy) {
+            // Corps central
+            g2.fillOval(cx - 6, cy - 6, 12, 12);
+            g2.setColor(g2.getBackground()); // trou
+            // Dents (8 rectangles rotatifs)
+            Graphics2D g3 = (Graphics2D) g2.create();
+            g3.translate(cx, cy);
+            for (int i = 0; i < 8; i++) {
+                g3.rotate(Math.PI / 4);
+                g3.setColor(fg);
+                g3.fillRoundRect(-2, 7, 4, 5, 2, 2);
+            }
+            g3.dispose();
+            // Trou central
+            g2.setColor(bg);
+            g2.fillOval(cx - 3, cy - 3, 6, 6);
+        }
     }
 }

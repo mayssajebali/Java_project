@@ -75,11 +75,11 @@ public class MainLoginFrame extends JFrame {
         top.add(Box.createVerticalStrut(10));
         top.add(sub);
         top.add(Box.createVerticalStrut(22));
-        top.add(makeCard(GREEN_LIGHT,  "🏢", "Espaces de bureaux",        "Open space, bureaux privés, salles"));
+        top.add(makeCard(GREEN_LIGHT,  "building", "Espaces de bureaux",        "Open space, bureaux privés, salles"));
         top.add(Box.createVerticalStrut(8));
-        top.add(makeCard(AMBER_LIGHT,  "👥", "142 membres actifs",         "Freelances, startups, équipes"));
+        top.add(makeCard(AMBER_LIGHT,  "people", "142 membres actifs",         "Freelances, startups, équipes"));
         top.add(Box.createVerticalStrut(8));
-        top.add(makeCard(BLUE_LIGHT,   "📅", "Réservations en temps réel", "Disponibilité instantanée"));
+        top.add(makeCard(BLUE_LIGHT,   "calendar", "Réservations en temps réel", "Disponibilité instantanée"));
 
         // Stats
         JPanel bottom = new JPanel();
@@ -114,19 +114,12 @@ public class MainLoginFrame extends JFrame {
         card.setBorder(new EmptyBorder(10, 12, 10, 12));
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58));
         card.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel ic = new JLabel(icon, SwingConstants.CENTER) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(bg);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                g2.dispose(); super.paintComponent(g);
-            }
-        };
-        ic.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
-        ic.setPreferredSize(new Dimension(36, 36));
-        ic.setOpaque(false);
+        Color iconFg;
+        if (bg == GREEN_LIGHT)       iconFg = GREEN_DARK;
+        else if (bg == AMBER_LIGHT)  iconFg = new Color(180, 110, 20);
+        else if (bg == BLUE_LIGHT)   iconFg = BLUE_DARK;
+        else                         iconFg = TEXT_MED;
+        IconLabel ic = new IconLabel(icon, bg,iconFg );
 
         JPanel info = new JPanel();
         info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
@@ -210,7 +203,7 @@ public class MainLoginFrame extends JFrame {
 
         // Carte Admin
         JPanel adminCard = makeAccessCard(
-                "⚙", "Administrateur",
+                "gear", "Administrateur",
                 "Gérez membres, espaces,\nréservations et facturation.",
                 GREEN, GREEN_LIGHT, GREEN_DARK
         );
@@ -220,7 +213,7 @@ public class MainLoginFrame extends JFrame {
 
         // Carte Membre
         JPanel membreCard = makeAccessCard(
-                "◎", "Membre",
+                "person", "Membre",
                 "Consultez l'historique de vos\nréservations de bureaux et salles.",
                 BLUE, BLUE_LIGHT, BLUE_DARK
         );
@@ -277,19 +270,8 @@ public class MainLoginFrame extends JFrame {
                 new EmptyBorder(17, 17, 17, 17)));
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
 
-        JLabel ic = new JLabel(icon, SwingConstants.CENTER) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(iconBg);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                g2.dispose(); super.paintComponent(g);
-            }
-        };
-        ic.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        ic.setForeground(iconColor);
-        ic.setPreferredSize(new Dimension(44, 44));
-        ic.setOpaque(false);
+        IconLabel ic = new IconLabel(icon, iconBg, iconColor);
+
 
         JPanel info = new JPanel();
         info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
@@ -332,4 +314,5 @@ public class MainLoginFrame extends JFrame {
         badge.add(lbl);
         return badge;
     }
+    // ── Classe utilitaire : icône dessinée en Java 2D ──────────
 }

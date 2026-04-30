@@ -61,9 +61,9 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
         toolbar.setOpaque(false);
         toolbar.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
 
-        JButton btnGen    = makeBtn("⚡ Générer",        ui.getColorBlue());
-        JButton btnStatut = makeBtn("✓ Changer statut",  GREEN);
-        JButton btnDel    = makeBtn("✕ Supprimer",       RED);
+        JButton btnGen    = makeBtn("Générer","add",        ui.getColorBlue());
+        JButton btnStatut = makeBtn("Changer statut","edit",  GREEN);
+        JButton btnDel    = makeBtn("Supprimer","delete",       RED);
 
         toolbar.add(btnGen);
         toolbar.add(btnStatut);
@@ -189,7 +189,7 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
                     f.getDateFacture(),
                     String.format("%.2f DT", f.getMontant()),
                     f.getStatut(),
-                    "⬇  Télécharger"          // valeur affichée dans le bouton
+                    "Télécharger"          // valeur affichée dans le bouton
             });
 
             total++;
@@ -302,62 +302,79 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
 
     // ===================== PDF BUTTON RENDERER =====================
     /** Affiche un bouton stylé dans la cellule. */
-    private class PdfButtonRenderer extends JButton implements TableCellRenderer {
+    private class PdfButtonRenderer extends JPanel implements TableCellRenderer {
+        private final IconLabel icon = new IconLabel("download", Color.WHITE,BLUE) {
+            { setPreferredSize(new Dimension(16, 16)); }
+        };
+        private final JLabel lbl = new JLabel("Télécharger");
+
         PdfButtonRenderer() {
+            setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
             setOpaque(true);
-            setFocusPainted(false);
-            setBorderPainted(false);
-            setFont(new Font("Segoe UI", Font.BOLD, 12));
-            setForeground(Color.WHITE);
-            setCursor(new Cursor(Cursor.HAND_CURSOR));
+            lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            lbl.setForeground(BLUE);
+            add(icon);
+            add(lbl);
         }
 
         @Override
         public Component getTableCellRendererComponent(
                 JTable t, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
-            setText(value != null ? value.toString() : "⬇  Télécharger");
-            setBackground(BLUE);
-            setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
+            setBackground(isSelected ? (FacturePanel.this.ui.isDarkMode() ? D_SEL : L_SEL) : (row % 2 == 0 ? FacturePanel.this.ui.getWhite() : L_ROW_ALT));
+            lbl.setText(value != null ? value.toString() : "Télécharger");
             return this;
         }
     }
-
     // ===================== PDF BUTTON EDITOR =====================
     /** Gère le clic sur le bouton PDF. */
     private class PdfButtonEditor extends DefaultCellEditor {
         private JButton btn;
         private int     clickedRow = -1;
 
-        PdfButtonEditor(JCheckBox checkBox) {
-            super(checkBox);
-            btn = new JButton();
-            btn.setOpaque(true);
-            btn.setFocusPainted(false);
-            btn.setBorderPainted(false);
-            btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-            btn.setForeground(Color.WHITE);
-            btn.setBackground(new Color(37, 99, 235));  // hover plus foncé
-            btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            btn.setBorder(BorderFactory.createEmptyBorder(4, 10, 4, 10));
+            PdfButtonEditor(JCheckBox checkBox) {
+                super(checkBox);
 
-            btn.addActionListener(e -> {
-                fireEditingStopped();
-                if (clickedRow >= 0) {
-                    int modelRow = table.convertRowIndexToModel(clickedRow);
-                    telechargerPdf(modelRow);
-                }
-            });
+                btn = new JButton() {
+                    {
+                        setLayout(new FlowLayout(FlowLayout.CENTER, 5, 0));
+                        setOpaque(true);
+                        setFocusPainted(false);
+                        setBorderPainted(false);
+                        setBackground(new Color(37, 99, 235));
+                        setCursor(new Cursor(Cursor.HAND_CURSOR));
+                        setBorder(BorderFactory.createEmptyBorder(10, 6, 4, 10));
+
+                        IconLabel icon = new IconLabel("download", new Color(37, 99, 235), Color.WHITE) {
+                            { setPreferredSize(new Dimension(16, 16)); }
+                        };
+                        JLabel lbl = new JLabel("Télécharger");
+                        lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+                        lbl.setForeground(Color.WHITE);
+                        add(icon);
+                        add(lbl);
+                    }
+                };
+
+                btn.addActionListener(e -> {
+                    fireEditingStopped();
+                    if (clickedRow >= 0) {
+                        int modelRow = table.convertRowIndexToModel(clickedRow);
+                        telechargerPdf(modelRow);
+                    }
+                });
+
+
+
         }
 
         @Override
         public Component getTableCellEditorComponent(
                 JTable t, Object value, boolean isSelected, int row, int col) {
             clickedRow = row;
-            btn.setText(value != null ? value.toString() : "⬇  Télécharger");
             return btn;
         }
 
-        @Override public Object getCellEditorValue() { return btn.getText(); }
+        @Override public Object getCellEditorValue() { return "Télécharger"; }
         @Override public boolean isCellEditable(java.util.EventObject e) { return true; }
     }
 
@@ -496,15 +513,25 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
         return card;
     }
 
-    private JButton makeBtn(String text, Color color) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+    private JButton makeBtn(String text, String iconType, Color color) {
+        JButton btn = new JButton();
+
+        btn.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 0)); // layout interne
+
+        IconLabel icon = new IconLabel(iconType, color, Color.WHITE) {
+            { setPreferredSize(new Dimension(18, 18)); }
+        };        JLabel label = new JLabel(text);
+        label.setForeground(Color.WHITE);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 13));
+
+        btn.add(icon);
+        btn.add(label);
+
         btn.setBackground(color);
-        btn.setForeground(Color.WHITE);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        btn.setBorder(BorderFactory.createEmptyBorder(12, 8, 12, 8));
         return btn;
     }
 
@@ -530,14 +557,22 @@ public class FacturePanel extends JPanel implements AdminUI.Searchable {
         }
         return p;
     }
+    private JButton makeBtnSave(String text, Color color) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setBackground(color); btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false); btn.setBorderPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        return btn; }
 
     private JPanel makeDialogActions(JDialog d, Runnable onSave) {
         JButton btnCancel = new JButton("Annuler");
         btnCancel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         btnCancel.setFocusPainted(false);
+        btnCancel.setBorder(BorderFactory.createEmptyBorder(9, 17, 9, 17));
         btnCancel.addActionListener(e -> d.dispose());
-
-        JButton btnSave = makeBtn("Enregistrer", ui.getColorBlue());
+        JButton btnSave = makeBtnSave("Enregistrer",ui.getColorBlue());
         btnSave.addActionListener(e -> onSave.run());
 
         JPanel p = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));

@@ -17,6 +17,7 @@ public class LoginAdminFrame extends JFrame {
     private static final Color GREEN        = new Color(29,  158, 117);
     private static final Color GREEN_DARK   = new Color(15,  110, 86);
     private static final Color GREEN_LIGHT  = new Color(225, 245, 238);
+    private static final Color BLUE_DARK   = new Color(29,  78,  216);
     private static final Color AMBER_LIGHT  = new Color(250, 238, 218);
     private static final Color BLUE_LIGHT   = new Color(230, 241, 251);
     private static final Color ERROR_CLR    = new Color(226, 75,  74);
@@ -83,11 +84,11 @@ public class LoginAdminFrame extends JFrame {
         top.add(Box.createVerticalStrut(10));
         top.add(makeLeftSub("Gérez vos membres, réservations\net espaces depuis un seul tableau de bord."));
         top.add(Box.createVerticalStrut(22));
-        top.add(buildSpaceCard(GREEN_LIGHT,  "Espaces de bureaux",        "Open space, bureaux privés, salles"));
+        top.add(makeCard(GREEN_LIGHT,  "building","Espaces de bureaux",        "Open space, bureaux privés, salles"));
         top.add(Box.createVerticalStrut(8));
-        top.add(buildSpaceCard(AMBER_LIGHT, "142 membres actifs",         "Freelances, startups, équipes"));
+        top.add(makeCard(AMBER_LIGHT, "people","142 membres actifs",         "Freelances, startups, équipes"));
         top.add(Box.createVerticalStrut(8));
-        top.add(buildSpaceCard(BLUE_LIGHT,  "Réservations en temps réel", "Disponibilité instantanée"));
+        top.add(makeCard(BLUE_LIGHT, "calendar", "Réservations en temps réel", "Disponibilité instantanée"));
 
         p.add(top, BorderLayout.NORTH);
 
@@ -151,7 +152,7 @@ public class LoginAdminFrame extends JFrame {
         return l;
     }
 
-    private JPanel buildSpaceCard(Color iconBg, String title, String desc) {
+    private JPanel makeCard(Color bg, String icon, String title, String desc) {
         JPanel card = new JPanel(new BorderLayout(12, 0)) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -160,64 +161,32 @@ public class LoginAdminFrame extends JFrame {
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
                 g2.setColor(BORDER_CLR);
                 g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 10, 10);
-                g2.dispose();
-                super.paintComponent(g);
+                g2.dispose(); super.paintComponent(g);
             }
         };
         card.setOpaque(false);
         card.setBorder(new EmptyBorder(10, 12, 10, 12));
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58));
         card.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        String iconText;
-
-        if (title.toLowerCase().contains("bureau")) iconText = "🏢";
-        else if (title.toLowerCase().contains("membre")) iconText = "👥";
-        else if (title.toLowerCase().contains("réservation")) iconText = "📅";
-        else iconText = "📊";
-
-// Icône dynamique + fond coloré
-        JLabel icon = new JLabel(iconText, SwingConstants.CENTER) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // fond dynamique conservé
-                g2.setColor(iconBg);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-
-        icon.setPreferredSize(new Dimension(36, 36));
-        icon.setOpaque(false);
-        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
-        icon.setForeground(new Color(30, 30, 30));
-        icon.setPreferredSize(new Dimension(36, 36));
-        icon.setMinimumSize(new Dimension(36, 36));
-        icon.setMaximumSize(new Dimension(36, 36));
-        icon.setOpaque(false);
+        Color iconFg;
+        if (bg == GREEN_LIGHT)       iconFg = GREEN_DARK;
+        else if (bg == AMBER_LIGHT)  iconFg = new Color(180, 110, 20);
+        else if (bg == BLUE_LIGHT)   iconFg = BLUE_DARK;
+        else                         iconFg = TEXT_MED;
+        IconLabel ic = new IconLabel(icon, bg,iconFg );
 
         JPanel info = new JPanel();
         info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
         info.setOpaque(false);
+        JLabel t = new JLabel(title);
+        t.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        t.setForeground(TEXT_MED);
+        JLabel d = new JLabel(desc);
+        d.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        d.setForeground(TEXT_MUTED);
+        info.add(t); info.add(Box.createVerticalStrut(2)); info.add(d);
 
-        JLabel tl = new JLabel(title);
-        tl.setFont(FONT_BOLD_12);
-        tl.setForeground(TEXT_MED);
-
-        JLabel dl = new JLabel(desc);
-        dl.setFont(FONT_JAKARTA_11);
-        dl.setForeground(TEXT_MUTED);
-
-        info.add(tl);
-        info.add(Box.createVerticalStrut(2));
-        info.add(dl);
-
-        card.add(icon, BorderLayout.WEST);
+        card.add(ic,   BorderLayout.WEST);
         card.add(info, BorderLayout.CENTER);
         return card;
     }
@@ -415,10 +384,10 @@ public class LoginAdminFrame extends JFrame {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setColor(WHITE);
-        g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), 8, 8);
+        g2.fillRoundRect(1, 1, c.getWidth() - 2, c.getHeight() - 2, 8, 8);
         Color border = c.hasFocus() ? GREEN : BORDER_CLR;
         g2.setColor(border);
-        g2.drawRoundRect(0, 0, c.getWidth()-1, c.getHeight()-1, 8, 8);
+        g2.drawRoundRect(1, 1, c.getWidth() - 3, c.getHeight() - 3, 8, 8);
         g2.dispose();
     }
 
@@ -555,5 +524,96 @@ public class LoginAdminFrame extends JFrame {
         try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
         catch (Exception ignored) {}
         SwingUtilities.invokeLater(LoginAdminFrame::new);
+    }
+
+
+    // ── Classe utilitaire : icône dessinée en Java 2D ──────────
+    static class IconLabel extends JLabel {
+        private final String type;  // "gear", "circle", "square", "calendar", "people", "building"
+        private final Color bg, fg;
+
+        IconLabel(String type, Color bg, Color fg) {
+            super();
+            this.type = type; this.bg = bg; this.fg = fg;
+            setPreferredSize(new Dimension(36, 36));
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth(), h = getHeight();
+
+            // Fond arrondi
+            g2.setColor(bg);
+            g2.fillRoundRect(0, 0, w, h, 10, 10);
+
+            g2.setColor(fg);
+            g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+            int cx = w / 2, cy = h / 2;
+
+            switch (type) {
+                case "gear" -> drawGear(g2, cx, cy);
+                case "circle" -> {
+                    g2.drawOval(cx - 9, cy - 9, 18, 18);
+                    g2.fillOval(cx - 4, cy - 4, 8, 8);
+                }
+                case "square" -> {
+                    g2.setStroke(new BasicStroke(2.5f));
+                    g2.fillRect(cx - 6, cy - 6, 12, 12);
+                }
+                case "building" -> {
+                    g2.fillRect(cx - 8, cy - 9, 16, 14);
+                    g2.fillRect(cx - 3, cy + 5, 6, 4);
+                    g2.setColor(bg);
+                    g2.fillRect(cx - 5, cy - 6, 3, 3);
+                    g2.fillRect(cx + 2, cy - 6, 3, 3);
+                    g2.fillRect(cx - 5, cy - 1, 3, 3);
+                    g2.fillRect(cx + 2, cy - 1, 3, 3);
+                }
+                case "people" -> {
+                    g2.fillOval(cx - 8, cy - 9, 7, 7);
+                    g2.fillOval(cx + 1, cy - 9, 7, 7);
+                    g2.fillArc(cx - 11, cy - 2, 10, 8, 180, 180);
+                    g2.fillArc(cx + 1,  cy - 2, 10, 8, 180, 180);
+                }
+                case "calendar" -> {
+                    g2.drawRoundRect(cx - 9, cy - 8, 18, 16, 3, 3);
+                    g2.fillRect(cx - 5, cy - 10, 2, 5);
+                    g2.fillRect(cx + 3, cy - 10, 2, 5);
+                    g2.fillRect(cx - 7, cy - 2, 14, 1);
+                    // Petite croix = date
+                    g2.fillRect(cx - 2, cy + 2, 4, 1);
+                    g2.fillRect(cx, cy,   1, 4);
+                }
+                case "person" -> {
+                    // Tête
+                    g2.fillOval(cx - 5, cy - 10, 10, 10);
+                    // Corps
+                    g2.fillArc(cx - 8, cy + 1, 16, 10, 180, 180);
+                }
+            }
+            g2.dispose();
+        }
+
+        private void drawGear(Graphics2D g2, int cx, int cy) {
+            // Corps central
+            g2.fillOval(cx - 6, cy - 6, 12, 12);
+            g2.setColor(g2.getBackground()); // trou
+            // Dents (8 rectangles rotatifs)
+            Graphics2D g3 = (Graphics2D) g2.create();
+            g3.translate(cx, cy);
+            for (int i = 0; i < 8; i++) {
+                g3.rotate(Math.PI / 4);
+                g3.setColor(fg);
+                g3.fillRoundRect(-2, 7, 4, 5, 2, 2);
+            }
+            g3.dispose();
+            // Trou central
+            g2.setColor(bg);
+            g2.fillOval(cx - 3, cy - 3, 6, 6);
+        }
     }
 }

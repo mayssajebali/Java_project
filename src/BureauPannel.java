@@ -57,9 +57,9 @@ public class BureauPannel extends JPanel implements AdminUI.Searchable {
         toolbar.setOpaque(false);
         toolbar.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
 
-        JButton btnAdd  = makeBtn("+ Ajouter",   ui.getColorBlue());
-        JButton btnEdit = makeBtn("✎ Modifier",  ui.getColorOrange());
-        JButton btnDel  = makeBtn("✕ Supprimer", ui.getColorRed());
+        JButton btnAdd  = makeBtn("Ajouter", "add",  ui.getColorBlue());
+        JButton btnEdit = makeBtn("Modifier", "edit", ui.getColorOrange());
+        JButton btnDel  = makeBtn("Supprimer", "delete",ui.getColorRed());
 
         toolbar.add(btnAdd);
         toolbar.add(btnEdit);
@@ -274,15 +274,25 @@ public class BureauPannel extends JPanel implements AdminUI.Searchable {
         return card;
     }
 
-    private JButton makeBtn(String text, Color color) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+    private JButton makeBtn(String text, String iconType, Color color) {
+        JButton btn = new JButton();
+
+        btn.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 0)); // layout interne
+
+        IconLabel icon = new IconLabel(iconType, color, Color.WHITE) {
+            { setPreferredSize(new Dimension(18, 18)); }
+        };           JLabel label = new JLabel(text);
+        label.setForeground(Color.WHITE);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 13));
+
+        btn.add(icon);
+        btn.add(label);
+
         btn.setBackground(color);
-        btn.setForeground(Color.WHITE);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        btn.setBorder(BorderFactory.createEmptyBorder(12, 8, 12, 8));
         return btn;
     }
 
@@ -308,14 +318,24 @@ public class BureauPannel extends JPanel implements AdminUI.Searchable {
         }
         return p;
     }
+    private JButton makeBtnSave(String text, Color color) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setBackground(color); btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false); btn.setBorderPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        return btn;
+    }
 
     private JPanel makeDialogActions(JDialog d, Runnable onSave) {
         JButton btnCancel = new JButton("Annuler");
         btnCancel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         btnCancel.setFocusPainted(false);
+        btnCancel.setBorder(BorderFactory.createEmptyBorder(9, 17, 9, 17));
         btnCancel.addActionListener(e -> d.dispose());
 
-        JButton btnSave = makeBtn("Enregistrer", ui.getColorBlue());
+        JButton btnSave = makeBtnSave("Enregistrer", ui.getColorBlue());
         btnSave.addActionListener(e -> onSave.run());
 
         JPanel p = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
